@@ -1,0 +1,14 @@
+{
+  "name": "hono-express-app",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "express": "^4.19.2",
+    "hono": "^4.6.14"
+  }
+}
