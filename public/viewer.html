@@ -6,29 +6,37 @@
     <title>作品ビューア</title>
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --card-bg: #1e293b;
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --card-bg-hover: #1f242d;
             --accent: #38bdf8;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            --accent-soft: rgba(56, 189, 248, 0.08);
+            --text: #f0f6fc;
+            --text-muted: #8b949e;
+            --text-sub: #c9d1d9;
+            --border: rgba(255, 255, 255, 0.1);
+            --danger: #f85149;
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
             background-color: var(--bg-color);
             color: var(--text);
+            background-image: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.06), transparent 60%);
+            min-height: 100vh;
         }
 
+        /* sticky ヘッダー */
         .header-bar {
             position: sticky;
             top: 0;
-            background-color: rgba(15, 23, 42, 0.9);
-            backdrop-filter: blur(8px);
-            padding: 1rem 1.5rem;
+            background-color: rgba(13, 17, 23, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 0.85rem 1.5rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -37,74 +45,154 @@
         }
 
         .back-btn {
-            color: var(--accent);
+            color: var(--text-sub);
             text-decoration: none;
-            font-weight: bold;
-            display: flex;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text);
         }
 
         .container {
             max-width: 900px;
             margin: 0 auto;
-            padding: 1.5rem 1rem 4rem;
+            padding: 2rem 1rem 5rem;
         }
 
+        /* 読み込みアニメーション */
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 1rem;
+            gap: 1.2rem;
+        }
+
+        .spinner-ring {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(255, 255, 255, 0.08);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 0.9s cubic-bezier(0.6, 0.2, 0.1, 1) infinite;
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+
+        /* フェードインアニメーション */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 作品メタ情報カード */
         .meta-container {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            background: linear-gradient(145deg, rgba(22, 27, 34, 0.9), rgba(13, 17, 23, 0.95));
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            padding: 1.8rem;
+            margin-bottom: 2.5rem;
             border: 1px solid var(--border);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
         }
 
         h1 {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             margin-top: 0;
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
             line-height: 1.4;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: #ffffff;
         }
 
         .meta-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 0.8rem;
-            font-size: 0.9rem;
+            gap: 1rem;
+            font-size: 0.88rem;
             color: var(--text-muted);
-            margin-bottom: 1rem;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 1rem 1.2rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        .meta-grid strong {
-            color: var(--text);
+        .meta-grid div strong {
+            color: var(--text-sub);
+            font-weight: 600;
+            margin-right: 0.4rem;
         }
 
         .tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.4rem;
-            margin-top: 1rem;
+            gap: 0.5rem;
+            margin-top: 1.2rem;
         }
 
         .tag {
-            background-color: #334155;
-            color: #e2e8f0;
-            padding: 0.25rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-sub);
+            border: 1px solid var(--border);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
-        /* 縦スクロール 漫画ビューア */
+        .tag:hover {
+            background-color: var(--accent-glow);
+            border-color: rgba(56, 189, 248, 0.4);
+            color: #ffffff;
+        }
+
+        /* 縦スクロール漫画ビューア */
         .manga-viewer {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 0;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
             background-color: #000;
-            border-radius: 8px;
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--border);
+            min-height: 300px;
         }
 
         .manga-viewer img {
@@ -113,75 +201,234 @@
             display: block;
         }
 
+        /* セクション共通見出し */
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #ffffff;
+        }
+
+        .section-title::before {
+            content: "";
+            display: inline-block;
+            width: 3px;
+            height: 1.1rem;
+            background-color: var(--accent);
+            border-radius: 2px;
+        }
+
+        /* コメントセクション */
+        .comments-section {
+            border-top: 1px solid var(--border);
+            padding-top: 2.5rem;
+            margin-top: 3.5rem;
+        }
+
+        .comment-form {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .comment-form input,
+        .comment-form textarea {
+            background-color: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .comment-form input:focus,
+        .comment-form textarea:focus {
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .comment-form textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .comment-submit-btn {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #38bdf8, #0284c7);
+            color: #ffffff;
+            border: none;
+            padding: 0.65rem 1.4rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .comment-submit-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .comment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .comment-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            transition: border-color 0.2s;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .comment-num {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .comment-meta {
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+        }
+
+        .comment-text {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: var(--text-sub);
+            margin: 0;
+        }
+
+        .comment-likes {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #f43f5e;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 0.5rem;
+            transition: color 0.2s;
+        }
+
+        .delete-btn:hover {
+            color: var(--danger);
+        }
+
         /* 関連作品 */
         .related-section {
             border-top: 1px solid var(--border);
-            padding-top: 2rem;
-            margin-top: 3rem;
-        }
-
-        .related-section h2 {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
+            padding-top: 2.5rem;
+            margin-top: 3.5rem;
         }
 
         .related-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 1rem;
+            gap: 1.2rem;
         }
 
         .related-card {
             background-color: var(--card-bg);
-            border-radius: 8px;
+            border-radius: 10px;
             overflow: hidden;
             border: 1px solid var(--border);
             text-decoration: none;
             color: inherit;
-            transition: transform 0.2s, border-color 0.2s;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
             display: flex;
             flex-direction: column;
         }
 
         .related-card:hover {
-            transform: translateY(-3px);
-            border-color: var(--accent);
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
         }
 
         .related-card img {
             width: 100%;
             height: 220px;
             object-fit: cover;
+            background-color: rgba(0,0,0,0.3);
         }
 
         .related-card-title {
-            padding: 0.6rem;
-            font-size: 0.8rem;
-            line-height: 1.3;
+            padding: 0.75rem;
+            font-size: 0.82rem;
+            font-weight: 500;
+            line-height: 1.4;
+            color: var(--text-sub);
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-        }
-
-        .spinner {
-            text-align: center;
-            padding: 4rem 0;
-            color: var(--accent);
-            font-size: 1.2rem;
         }
     </style>
 </head>
 <body>
 
     <div class="header-bar">
-        <a href="/home.html" class="back-btn">← ホームに戻る</a>
+        <a href="/home.html" class="back-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            ホームに戻る
+        </a>
     </div>
 
     <div class="container">
-        <div id="loading" class="spinner">作品データを読み込んでいます...</div>
-        <div id="content" style="display: none;">
+        <!-- ローディング表示（スピナー＆パルスアニメーション） -->
+        <div id="loading" class="loading-container">
+            <div class="spinner-ring"></div>
+            <div class="loading-text">作品データを読み込んでいます...</div>
+        </div>
+
+        <div id="content" class="fade-in" style="display: none;">
             
+            <!-- 作品詳細メタ情報 -->
             <div class="meta-container">
                 <h1 id="title"></h1>
                 <div class="meta-grid">
@@ -193,10 +440,27 @@
                 <div class="tags" id="tags"></div>
             </div>
 
+            <!-- 縦並び画像ビューア -->
             <div class="manga-viewer" id="mangaViewer"></div>
 
+            <!-- コメントセクション -->
+            <div class="comments-section">
+                <div class="section-title">コメント (<span id="commentCount">0</span>)</div>
+
+                <!-- 新規コメント投稿フォーム -->
+                <form class="comment-form" onsubmit="handlePostComment(event)">
+                    <input type="text" id="commentAuthorInput" placeholder="お名前 (任意)" maxlength="20">
+                    <textarea id="commentTextInput" placeholder="感想やコメントを入力..." required></textarea>
+                    <button type="submit" class="comment-submit-btn">コメントを送信</button>
+                </form>
+
+                <!-- コメント一覧 -->
+                <div class="comment-list" id="commentList"></div>
+            </div>
+
+            <!-- 関連作品 -->
             <div class="related-section">
-                <h2>関連作品</h2>
+                <div class="section-title">関連作品</div>
                 <div class="related-grid" id="relatedGrid"></div>
             </div>
 
@@ -204,11 +468,14 @@
     </div>
 
     <script>
+        let currentWorkId = null;
+        let localComments = [];
+
         async function loadViewer() {
             const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
+            currentWorkId = params.get('id');
 
-            if (!id) {
+            if (!currentWorkId) {
                 alert('IDが指定されていません。');
                 window.location.href = '/home.html';
                 return;
@@ -216,14 +483,13 @@
 
             const loading = document.getElementById('loading');
             const content = document.getElementById('content');
-            loading.style.display = 'block';
+            loading.style.display = 'flex';
             content.style.display = 'none';
 
-            // 画面トップへスクロール
             window.scrollTo(0, 0);
 
             try {
-                const res = await fetch(`/api/proxy-details?id=${encodeURIComponent(id)}`);
+                const res = await fetch(`/api/proxy-details?id=${encodeURIComponent(currentWorkId)}`);
                 const data = await res.json();
 
                 // メタ情報の挿入
@@ -235,11 +501,16 @@
 
                 // タグ
                 const tagsContainer = document.getElementById('tags');
-                tagsContainer.innerHTML = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
+                tagsContainer.innerHTML = (data.tags || []).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('');
 
-                // 漫画ビューア（画像縦並び）
+                // 漫画ビューア
                 const viewer = document.getElementById('mangaViewer');
-                viewer.innerHTML = data.images.map(img => `<img src="${img}" alt="Page" loading="lazy">`).join('');
+                viewer.innerHTML = (data.images || []).map(img => `<img src="${img}" alt="Page" loading="lazy">`).join('');
+
+                // コメント初期化 (APIからの取得データ + ローカル保存分)
+                const storedLocal = JSON.parse(localStorage.getItem(`comments_${currentWorkId}`) || '[]');
+                localComments = storedLocal;
+                renderComments(data.comments || []);
 
                 // 関連作品
                 const relatedGrid = document.getElementById('relatedGrid');
@@ -250,24 +521,101 @@
                         card.className = 'related-card';
                         card.href = `/viewer.html?id=${encodeURIComponent(rel.id)}`;
                         card.innerHTML = `
-                            <img src="${rel.image || 'https://via.placeholder.com/160x220?text=No+Image'}" alt="${rel.title}" loading="lazy">
-                            <div class="related-card-title">${rel.title}</div>
+                            <img src="${rel.image || 'https://via.placeholder.com/160x220?text=No+Image'}" alt="${escapeHtml(rel.title)}" loading="lazy">
+                            <div class="related-card-title">${escapeHtml(rel.title)}</div>
                         `;
                         relatedGrid.appendChild(card);
                     });
                 } else {
-                    relatedGrid.innerHTML = '<p style="color: var(--text-muted);">関連作品はありません。</p>';
+                    relatedGrid.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; font-size: 0.9rem;">関連作品はありません。</p>';
                 }
 
                 loading.style.display = 'none';
                 content.style.display = 'block';
 
             } catch (e) {
-                loading.textContent = '作品情報の読み込みに失敗しました。';
+                loading.innerHTML = '<div style="color: var(--danger); font-size: 0.95rem;">作品情報の読み込みに失敗しました。</div>';
             }
         }
 
-        // 初期実行 & URLパラメータ変更時（関連作品クリック時）の再ロード対応
+        // コメント一覧の描画
+        function renderComments(apiComments) {
+            const allComments = [...localComments, ...apiComments];
+            document.getElementById('commentCount').textContent = allComments.length;
+
+            const container = document.getElementById('commentList');
+            if (allComments.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.88rem;">コメントはまだありません。最初のコメントを投稿してみましょう！</p>';
+                return;
+            }
+
+            container.innerHTML = allComments.map((c, index) => {
+                const isLocal = c.isLocal === true;
+                const author = c.author || '名無しさん';
+                const date = c.date || 'たった今';
+                const num = c.num ? `#${c.num}` : '';
+                const likes = c.likes ? `❤️ ${c.likes}` : '';
+
+                return `
+                    <div class="comment-card">
+                        <div class="comment-header">
+                            <div class="comment-author">
+                                ${num ? `<span class="comment-num">${num}</span>` : ''}
+                                ${escapeHtml(author)}
+                            </div>
+                            <div class="comment-meta">
+                                <span>${escapeHtml(date)}</span>
+                                ${likes ? `<span class="comment-likes">${likes}</span>` : ''}
+                                ${isLocal ? `<button class="delete-btn" onclick="deleteLocalComment(${c.id})">削除</button>` : ''}
+                            </div>
+                        </div>
+                        <p class="comment-text">${escapeHtml(c.text)}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 新規コメント投稿（クライアントローカル保存）
+        function handlePostComment(event) {
+            event.preventDefault();
+            const authorInput = document.getElementById('commentAuthorInput');
+            const textInput = document.getElementById('commentTextInput');
+
+            const newComment = {
+                id: Date.now(),
+                isLocal: true,
+                author: authorInput.value.trim() || '名無しさん',
+                text: textInput.value.trim(),
+                date: new Date().toLocaleDateString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+            };
+
+            localComments.unshift(newComment);
+            localStorage.setItem(`comments_${currentWorkId}`, JSON.stringify(localComments));
+
+            textInput.value = '';
+            authorInput.value = '';
+
+            // 画面更新
+            loadViewer();
+        }
+
+        // 投稿したローカルコメントの削除
+        function deleteLocalComment(commentId) {
+            localComments = localComments.filter(c => c.id !== commentId);
+            localStorage.setItem(`comments_${currentWorkId}`, JSON.stringify(localComments));
+            loadViewer();
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         window.addEventListener('DOMContentLoaded', loadViewer);
     </script>
 </body>
