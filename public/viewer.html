@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>作品ビューア</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+        }
+
+        .header-bar {
+            position: sticky;
+            top: 0;
+            background-color: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .back-btn {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem 1rem 4rem;
+        }
+
+        .meta-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.8rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .meta-grid strong {
+            color: var(--text);
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 1rem;
+        }
+
+        .tag {
+            background-color: #334155;
+            color: #e2e8f0;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        /* 縦スクロール 漫画ビューア */
+        .manga-viewer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 3rem;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .manga-viewer img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 関連作品 */
+        .related-section {
+            border-top: 1px solid var(--border);
+            padding-top: 2rem;
+            margin-top: 3rem;
+        }
+
+        .related-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .related-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+        }
+
+        .related-card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .related-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+        }
+
+        .related-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .related-card-title {
+            padding: 0.6rem;
+            font-size: 0.8rem;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .spinner {
+            text-align: center;
+            padding: 4rem 0;
+            color: var(--accent);
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <a href="/home.html" class="back-btn">← ホームに戻る</a>
+    </div>
+
+    <div class="container">
+        <div id="loading" class="spinner">作品データを読み込んでいます...</div>
+        <div id="content" style="display: none;">
+            
+            <div class="meta-container">
+                <h1 id="title"></h1>
+                <div class="meta-grid">
+                    <div><strong>作者:</strong> <span id="author"></span></div>
+                    <div><strong>サークル:</strong> <span id="circle"></span></div>
+                    <div><strong>パロディ:</strong> <span id="parody"></span></div>
+                    <div><strong>ページ数:</strong> <span id="pages"></span> ページ</div>
+                </div>
+                <div class="tags" id="tags"></div>
+            </div>
+
+            <div class="manga-viewer" id="mangaViewer"></div>
+
+            <div class="related-section">
+                <h2>関連作品</h2>
+                <div class="related-grid" id="relatedGrid"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function loadViewer() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+
+            if (!id) {
+                alert('IDが指定されていません。');
+                window.location.href = '/home.html';
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('content');
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            // 画面トップへスクロール
+            window.scrollTo(0, 0);
+
+            try {
+                const res = await fetch(`/api/proxy-details?id=${encodeURIComponent(id)}`);
+                const data = await res.json();
+
+                // メタ情報の挿入
+                document.getElementById('title').textContent = data.title;
+                document.getElementById('author').textContent = data.author || '不明';
+                document.getElementById('circle').textContent = data.circle || '不明';
+                document.getElementById('parody').textContent = data.parody || 'なし';
+                document.getElementById('pages').textContent = data.pages || 0;
+
+                // タグ
+                const tagsContainer = document.getElementById('tags');
+                tagsContainer.innerHTML = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
+
+                // 漫画ビューア（画像縦並び）
+                const viewer = document.getElementById('mangaViewer');
+                viewer.innerHTML = data.images.map(img => `<img src="${img}" alt="Page" loading="lazy">`).join('');
+
+                // 関連作品
+                const relatedGrid = document.getElementById('relatedGrid');
+                relatedGrid.innerHTML = '';
+                if (data.related && data.related.length > 0) {
+                    data.related.forEach(rel => {
+                        const card = document.createElement('a');
+                        card.className = 'related-card';
+                        card.href = `/viewer.html?id=${encodeURIComponent(rel.id)}`;
+                        card.innerHTML = `
+                            <img src="${rel.image || 'https://via.placeholder.com/160x220?text=No+Image'}" alt="${rel.title}" loading="lazy">
+                            <div class="related-card-title">${rel.title}</div>
+                        `;
+                        relatedGrid.appendChild(card);
+                    });
+                } else {
+                    relatedGrid.innerHTML = '<p style="color: var(--text-muted);">関連作品はありません。</p>';
+                }
+
+                loading.style.display = 'none';
+                content.style.display = 'block';
+
+            } catch (e) {
+                loading.textContent = '作品情報の読み込みに失敗しました。';
+            }
+        }
+
+        // 初期実行 & URLパラメータ変更時（関連作品クリック時）の再ロード対応
+        window.addEventListener('DOMContentLoaded', loadViewer);
+    </script>
+</body>
+</html>
