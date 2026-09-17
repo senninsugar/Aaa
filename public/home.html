@@ -112,6 +112,15 @@
             letter-spacing: 0.05em;
         }
 
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--accent);
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -201,7 +210,7 @@
 
     <main>
         <div id="spinner" class="spinner">読み込み中...</div>
-        <div id="results" class="grid"></div>
+        <div id="results"></div>
     </main>
 
     <script>
@@ -209,9 +218,16 @@
             if (e.key === 'Enter') search();
         });
 
+        window.addEventListener('DOMContentLoaded', () => {
+            loadRecommendations();
+        });
+
         async function search() {
             const query = document.getElementById('searchInput').value.trim();
-            if (!query) return;
+            if (!query) {
+                await loadRecommendations();
+                return;
+            }
 
             const spinner = document.getElementById('spinner');
             const resultsDiv = document.getElementById('results');
@@ -230,26 +246,88 @@
                     return;
                 }
 
-                data.result.forEach(item => {
-                    const card = document.createElement('a');
-                    card.className = 'card';
-                    card.href = `/viewer.html?id=${encodeURIComponent(item.id)}`;
+                const grid = document.createElement('div');
+                grid.className = 'grid';
 
-                    card.innerHTML = `
-                        <div class="card-img-wrapper">
-                            <img src="${item.image || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${item.title}" loading="lazy">
-                        </div>
-                        <div class="card-body">
-                            <div class="card-title">${item.title}</div>
-                        </div>
-                    `;
-                    resultsDiv.appendChild(card);
+                data.result.forEach(item => {
+                    grid.appendChild(createCard(item));
                 });
+
+                resultsDiv.appendChild(grid);
 
             } catch (e) {
                 spinner.style.display = 'none';
                 alert('検索中にエラーが発生しました。');
             }
+        }
+
+        async function loadRecommendations() {
+            const spinner = document.getElementById('spinner');
+            const resultsDiv = document.getElementById('results');
+
+            spinner.style.display = 'block';
+            resultsDiv.innerHTML = '';
+
+            try {
+                const res = await fetch('/api/recommendations');
+                const data = await res.json();
+
+                spinner.style.display = 'none';
+
+                const sections = [
+                    { key: 'trending', label: '🔥 トレンド' },
+                    { key: 'popular', label: '🏆 ランキング' },
+                    { key: 'commented', label: '💬 話題性' },
+                    { key: 'rated', label: '👍 いいね！' }
+                ];
+
+                let hasContent = false;
+
+                sections.forEach(sec => {
+                    const items = data[sec.key];
+                    if (items && items.length > 0) {
+                        hasContent = true;
+                        
+                        const titleEl = document.createElement('h2');
+                        titleEl.className = 'section-title';
+                        titleEl.textContent = sec.label;
+                        resultsDiv.appendChild(titleEl);
+
+                        const grid = document.createElement('div');
+                        grid.className = 'grid';
+
+                        items.forEach(item => {
+                            grid.appendChild(createCard(item));
+                        });
+
+                        resultsDiv.appendChild(grid);
+                    }
+                });
+
+                if (!hasContent) {
+                    resultsDiv.innerHTML = '<div class="empty-state">おすすめ情報を取得できませんでした。</div>';
+                }
+
+            } catch (e) {
+                spinner.style.display = 'none';
+                resultsDiv.innerHTML = '<div class="empty-state">おすすめ情報の取得中にエラーが発生しました。</div>';
+            }
+        }
+
+        function createCard(item) {
+            const card = document.createElement('a');
+            card.className = 'card';
+            card.href = `/viewer.html?id=${encodeURIComponent(item.id)}`;
+
+            card.innerHTML = `
+                <div class="card-img-wrapper">
+                    <img src="${item.image || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${item.title}" loading="lazy">
+                </div>
+                <div class="card-body">
+                    <div class="card-title">${item.title}</div>
+                </div>
+            `;
+            return card;
         }
     </script>
 </body>
