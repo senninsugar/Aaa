@@ -7,37 +7,45 @@
     <style>
         :root {
             --bg-base: #090d16;
-            --glass-bg: rgba(30, 41, 59, 0.45);
-            --glass-card: rgba(255, 255, 255, 0.05);
-            --glass-card-hover: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-bg: rgba(15, 23, 42, 0.75);
+            --glass-card: rgba(255, 255, 255, 0.03);
+            --glass-card-hover: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --glass-border-focus: rgba(56, 189, 248, 0.5);
             --accent: #38bdf8;
             --accent-glow: rgba(56, 189, 248, 0.25);
-            --accent-hover: #0284c7;
+            --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
             --text: #f8fafc;
             --text-muted: #94a3b8;
+            --radius-lg: 16px;
+            --radius-md: 12px;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
         body {
-            margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-base);
             background-image: 
-                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
-                radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 45%),
+                radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.12) 0px, transparent 45%);
             background-attachment: fixed;
             color: var(--text);
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
+        /* ヘッダー */
         header {
-            padding: 1.25rem 1.5rem;
+            padding: 1rem 1.5rem;
             background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -49,17 +57,39 @@
         .search-container {
             display: flex;
             width: 100%;
-            max-width: 600px;
-            gap: 0.75rem;
+            max-width: 640px;
+            gap: 0.5rem;
+            position: relative;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: var(--text-muted);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            pointer-events: none;
+            transition: stroke 0.2s;
         }
 
         input[type="text"] {
-            flex: 1;
-            padding: 0.85rem 1.25rem;
-            border-radius: 12px;
+            width: 100%;
+            padding: 0.75rem 2.5rem 0.75rem 2.75rem;
+            border-radius: var(--radius-md);
             border: 1px solid var(--glass-border);
             background: rgba(15, 23, 42, 0.6);
-            color: #fff;
+            color: var(--text);
             font-size: 0.95rem;
             outline: none;
             backdrop-filter: blur(8px);
@@ -72,87 +102,232 @@
 
         input[type="text"]:focus {
             border-color: var(--glass-border-focus);
-            box-shadow: 0 0 16px var(--accent-glow);
-            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+            background: rgba(15, 23, 42, 0.85);
         }
 
-        button {
-            padding: 0.85rem 1.75rem;
-            background: linear-gradient(135deg, #38bdf8, #0284c7);
+        input[type="text"]:focus ~ .search-icon {
+            stroke: var(--accent);
+        }
+
+        .clear-btn {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: none;
+            padding: 0.25rem;
+            border-radius: 50%;
+        }
+
+        .clear-btn:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        button.search-btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--accent-gradient);
             color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            border: none;
+            border-radius: var(--radius-md);
             font-weight: 600;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.25s ease;
-            box-shadow: 0 4px 12px var(--accent-glow);
+            box-shadow: 0 4px 14px var(--accent-glow);
+            white-space: nowrap;
         }
 
-        button:hover {
+        button.search-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
         }
 
-        button:active {
-            transform: translateY(0);
-        }
-
-        main {
-            max-width: 1300px;
-            margin: 2rem auto;
-            padding: 0 1.5rem;
-        }
-
-        .spinner {
+        /* 検索履歴ドロップダウン */
+        .history-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
             display: none;
-            text-align: center;
-            margin: 4rem 0;
+            z-index: 101;
+        }
+
+        .history-header {
+            padding: 0.6rem 1rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .history-clear-all {
+            cursor: pointer;
             color: var(--accent);
-            font-size: 1rem;
-            letter-spacing: 0.05em;
+        }
+
+        .history-clear-all:hover {
+            text-decoration: underline;
+        }
+
+        .history-item {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .history-item .text {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .history-item svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--text-muted);
+        }
+
+        .history-item .delete-single {
+            color: var(--text-muted);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+        }
+
+        .history-item .delete-single:hover {
+            color: #f43f5e;
+            background: rgba(244, 63, 94, 0.1);
+        }
+
+        /* メイン */
+        main {
+            max-width: 1400px;
+            width: 100%;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+        }
+
+        /* クイックタグ・フィルター */
+        .quick-tags {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            margin-bottom: 2rem;
+            scrollbar-width: none;
+        }
+
+        .quick-tags::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tag-chip {
+            padding: 0.4rem 1rem;
+            background: var(--glass-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .tag-chip:hover {
+            color: var(--text);
+            border-color: rgba(255, 255, 255, 0.2);
+            background: var(--glass-card-hover);
+        }
+
+        /* セクションタイトル */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
         }
 
         .section-title {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            margin: 2rem 0 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--glass-border);
-            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text);
         }
 
+        .section-title span {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* グリッドレイアウト */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 1.75rem;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.5rem;
         }
 
+        /* スケルトンローディング */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 37%, rgba(255,255,255,0.03) 63%);
+            background-size: 400% 100%;
+            animation: skeleton-loading 1.4s ease infinite;
+            border-radius: var(--radius-lg);
+            aspect-ratio: 2/3;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0 50%; }
+        }
+
+        /* カードデザイン */
         .card {
             background: var(--glass-card);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 16px;
+            border-radius: var(--radius-lg);
             overflow: hidden;
             border: 1px solid var(--glass-border);
             text-decoration: none;
             color: inherit;
             display: flex;
             flex-direction: column;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .card:hover {
             transform: translateY(-6px);
             background: var(--glass-card-hover);
-            border-color: rgba(255, 255, 255, 0.25);
-            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5),
-                        0 0 20px var(--accent-glow);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px var(--accent-glow);
         }
 
         .card-img-wrapper {
             width: 100%;
-            height: 300px;
-            background: rgba(15, 23, 42, 0.4);
+            aspect-ratio: 2 / 3;
+            background: rgba(15, 23, 42, 0.5);
             overflow: hidden;
             position: relative;
         }
@@ -161,41 +336,54 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.4s ease;
+            transition: transform 0.5s ease;
         }
 
         .card:hover img {
-            transform: scale(1.05);
+            transform: scale(1.06);
         }
 
         .card-body {
-            padding: 1.25rem;
+            padding: 0.85rem;
             flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
         .card-title {
-            font-size: 0.95rem;
+            font-size: 0.88rem;
             font-weight: 600;
-            line-height: 1.5;
+            line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            color: var(--text);
         }
 
+        .card:hover .card-title {
+            color: var(--accent);
+        }
+
+        /* エラー・空の状態 */
         .empty-state {
             grid-column: 1 / -1;
             text-align: center;
             padding: 4rem 1rem;
             color: var(--text-muted);
             background: var(--glass-card);
-            border-radius: 16px;
+            border-radius: var(--radius-lg);
             border: 1px solid var(--glass-border);
-            backdrop-filter: blur(8px);
+        }
+
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+                gap: 0.85rem;
+            }
+            .card-body {
+                padding: 0.65rem;
+            }
+            .card-title {
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -203,131 +391,204 @@
 
     <header>
         <div class="search-container">
-            <input type="text" id="searchInput" placeholder="タイトル、作品名で検索...">
-            <button onclick="search()">検索</button>
+            <div class="input-wrapper">
+                <svg class="search-icon" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="searchInput" placeholder="タイトル、作品名で検索..." autocomplete="off">
+                <button id="clearBtn" class="clear-btn" title="クリア">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <button class="search-btn" onclick="triggerSearch()">検索</button>
+
+            <!-- 最近の検索ドロップダウン -->
+            <div id="historyDropdown" class="history-dropdown">
+                <div class="history-header">
+                    <span>最近の検索</span>
+                    <span class="history-clear-all" onclick="clearAllHistory()">全削除</span>
+                </div>
+                <div id="historyList"></div>
+            </div>
         </div>
     </header>
 
     <main>
-        <div id="spinner" class="spinner">読み込み中...</div>
-        <div id="results"></div>
+        <!-- クイックタグ -->
+        <div class="quick-tags">
+            <div class="tag-chip" onclick="quickSearch('SF')">SF</div>
+            <div class="tag-chip" onclick="quickSearch('ファンタジー')">ファンタジー</div>
+            <div class="tag-chip" onclick="quickSearch('アクション')">アクション</div>
+            <div class="tag-chip" onclick="quickSearch('ミステリー')">ミステリー</div>
+            <div class="tag-chip" onclick="quickSearch('日常')">日常</div>
+        </div>
+
+        <!-- 動的セクション（おすすめ or 検索結果） -->
+        <div class="section-header">
+            <h2 id="sectionTitle" class="section-title"><span>おすすめ作品</span></h2>
+        </div>
+
+        <div id="results" class="grid"></div>
     </main>
 
     <script>
-        document.getElementById('searchInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') search();
-        });
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const historyDropdown = document.getElementById('historyDropdown');
+        const historyList = document.getElementById('historyList');
+        const resultsDiv = document.getElementById('results');
+        const sectionTitle = document.getElementById('sectionTitle');
 
-        window.addEventListener('DOMContentLoaded', () => {
+        const STORAGE_KEY = 'library_search_history';
+
+        // 初期化処理
+        document.addEventListener('DOMContentLoaded', () => {
+            renderHistory();
             loadRecommendations();
         });
 
-        async function search() {
-            const query = document.getElementById('searchInput').value.trim();
-            if (!query) {
-                await loadRecommendations();
+        // 入力時の制御
+        searchInput.addEventListener('input', () => {
+            clearBtn.style.display = searchInput.value ? 'block' : 'none';
+        });
+
+        searchInput.addEventListener('focus', () => {
+            if (getHistory().length > 0) {
+                historyDropdown.style.display = 'block';
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                historyDropdown.style.display = 'none';
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            searchInput.focus();
+        });
+
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') triggerSearch();
+        });
+
+        /* --- 検索履歴管理 --- */
+        function getHistory() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        function saveHistory(query) {
+            let history = getHistory();
+            history = history.filter(item => item !== query);
+            history.unshift(query);
+            if (history.length > 5) history.pop();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+            renderHistory();
+        }
+
+        function removeHistoryItem(e, item) {
+            e.stopPropagation();
+            let history = getHistory().filter(h => h !== item);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+            renderHistory();
+            if (history.length === 0) historyDropdown.style.display = 'none';
+        }
+
+        function clearAllHistory() {
+            localStorage.removeItem(STORAGE_KEY);
+            historyDropdown.style.display = 'none';
+        }
+
+        function renderHistory() {
+            const history = getHistory();
+            if (history.length === 0) {
+                historyDropdown.style.display = 'none';
                 return;
             }
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item" onclick="quickSearch('${item}')">
+                    <div class="text">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        <span>${item}</span>
+                    </div>
+                    <span class="delete-single" onclick="removeHistoryItem(event, '${item}')">✕</span>
+                </div>
+            `).join('');
+        }
 
-            const spinner = document.getElementById('spinner');
-            const resultsDiv = document.getElementById('results');
+        /* --- 検索実行 ＆ データ取得 --- */
+        function quickSearch(tag) {
+            searchInput.value = tag;
+            clearBtn.style.display = 'block';
+            historyDropdown.style.display = 'none';
+            triggerSearch();
+        }
 
-            spinner.style.display = 'block';
-            resultsDiv.innerHTML = '';
+        function triggerSearch() {
+            const query = searchInput.value.trim();
+            if (!query) return;
+
+            saveHistory(query);
+            historyDropdown.style.display = 'none';
+            sectionTitle.innerHTML = `<span>「${query}」の検索結果</span>`;
+            fetchData(query);
+        }
+
+        // 過去の検索履歴をベースに「おすすめ作品」を自動読み込み
+        async function loadRecommendations() {
+            const history = getHistory();
+            const recommendQuery = history.length > 0 ? history[0] : '人気';
+            sectionTitle.innerHTML = `<span>あなたへのおすすめ</span> (最近の検索: ${recommendQuery})`;
+            fetchData(recommendQuery);
+        }
+
+        function showSkeletons() {
+            resultsDiv.innerHTML = Array(10).fill('<div class="skeleton"></div>').join('');
+        }
+
+        async function fetchData(query) {
+            showSkeletons();
 
             try {
                 const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
                 const data = await res.json();
 
-                spinner.style.display = 'none';
-
                 if (!data.result || data.result.length === 0) {
-                    resultsDiv.innerHTML = '<div class="empty-state">該当する結果が見つかりませんでした。</div>';
+                    resultsDiv.innerHTML = `
+                        <div class="empty-state">
+                            <span>該当する作品が見つかりませんでした。</span>
+                        </div>
+                    `;
                     return;
                 }
 
-                const grid = document.createElement('div');
-                grid.className = 'grid';
-
-                data.result.forEach(item => {
-                    grid.appendChild(createCard(item));
-                });
-
-                resultsDiv.appendChild(grid);
-
-            } catch (e) {
-                spinner.style.display = 'none';
-                alert('検索中にエラーが発生しました。');
-            }
-        }
-
-        async function loadRecommendations() {
-            const spinner = document.getElementById('spinner');
-            const resultsDiv = document.getElementById('results');
-
-            spinner.style.display = 'block';
-            resultsDiv.innerHTML = '';
-
-            try {
-                const res = await fetch('/api/recommendations');
-                const data = await res.json();
-
-                spinner.style.display = 'none';
-
-                const sections = [
-                    { key: 'trending', label: '🔥 トレンド' },
-                    { key: 'popular', label: '🏆 ランキング' },
-                    { key: 'commented', label: '💬 話題性' },
-                    { key: 'rated', label: '👍 いいね！' }
-                ];
-
-                let hasContent = false;
-
-                sections.forEach(sec => {
-                    const items = data[sec.key];
-                    if (items && items.length > 0) {
-                        hasContent = true;
-                        
-                        const titleEl = document.createElement('h2');
-                        titleEl.className = 'section-title';
-                        titleEl.textContent = sec.label;
-                        resultsDiv.appendChild(titleEl);
-
-                        const grid = document.createElement('div');
-                        grid.className = 'grid';
-
-                        items.forEach(item => {
-                            grid.appendChild(createCard(item));
-                        });
-
-                        resultsDiv.appendChild(grid);
-                    }
-                });
-
-                if (!hasContent) {
-                    resultsDiv.innerHTML = '<div class="empty-state">おすすめ情報を取得できませんでした。</div>';
-                }
+                resultsDiv.innerHTML = data.result.map(item => `
+                    <a href="/viewer.html?id=${encodeURIComponent(item.id)}" class="card">
+                        <div class="card-img-wrapper">
+                            <img src="${item.image || 'https://via.placeholder.com/300x450?text=No+Image'}" alt="${item.title}" loading="lazy">
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">${item.title}</div>
+                        </div>
+                    </a>
+                `).join('');
 
             } catch (e) {
-                spinner.style.display = 'none';
-                resultsDiv.innerHTML = '<div class="empty-state">おすすめ情報の取得中にエラーが発生しました。</div>';
+                resultsDiv.innerHTML = `
+                    <div class="empty-state">
+                        <span>通信エラーが発生しました。時間を置いて再度お試しください。</span>
+                    </div>
+                `;
             }
-        }
-
-        function createCard(item) {
-            const card = document.createElement('a');
-            card.className = 'card';
-            card.href = `/viewer.html?id=${encodeURIComponent(item.id)}`;
-
-            card.innerHTML = `
-                <div class="card-img-wrapper">
-                    <img src="${item.image || 'https://via.placeholder.com/200x300?text=No+Image'}" alt="${item.title}" loading="lazy">
-                </div>
-                <div class="card-body">
-                    <div class="card-title">${item.title}</div>
-                </div>
-            `;
-            return card;
         }
     </script>
 </body>
