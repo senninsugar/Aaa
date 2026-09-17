@@ -51,7 +51,7 @@ app.get('/api/search', async (c) => {
         const tasks = [];
         const postRegex = /<a href="https:\/\/momon-ga\.com\/(?:fanzine|magazine)\/(mo[0-9-]+)\/">[\s\S]*?<img src="([^"]+)"[\s\S]*?alt="([^"]+)"/g;
         let match;
-        while ((match = postRegex.exec(html))!== null) {
+        while ((match = postRegex.exec(html)) !== null) {
             const id = match[1];
             const imgUrl = match[2];
             const title = match[3];
@@ -70,6 +70,147 @@ app.get('/api/search', async (c) => {
     } catch (error) {
         console.error("Search API Error:", error.message);
         return c.json({ error: "Search failed" }, 500);
+    }
+});
+
+// ================== おすすめ機能エンドポイント ==================
+app.get('/api/recommendations', async (c) => {
+    try {
+        const targetUrl = 'https://momon-ga.com/';
+        const response = await fetch(targetUrl, {
+            headers: { 'User-Agent': UA }
+        });
+        const html = await response.text();
+        
+        const recommendations = {
+            trending: [],      // 急上昇
+            popular: [],       // 人気
+            commented: [],     // コメント指数
+            rated: []          // 高評価
+        };
+
+        // 共通の正規表現で抽出
+        const extractPosts = (sectionHtml) => {
+            const posts = [];
+            const postRegex = /<a href="https:\/\/momon-ga\.com\/(?:fanzine|magazine)\/(mo[0-9-]+)\/">[\s\S]*?<img[^>]*src="([^"]+)"[\s\S]*?alt="([^"]+)"[\s\S]*?<div class="post-list-wpulike">([^<]+)<\/div>/g;
+            let match;
+            while ((match = postRegex.exec(sectionHtml)) !== null) {
+                posts.push({
+                    id: match[1],
+                    image: match[2],
+                    title: match[3],
+                    likes: match[4]
+                });
+            }
+            return posts;
+        };
+
+        // 急上昇（トレンド）を抽出
+        const trendingRegex = /<h3>トレンド<\/h3>[\s\S]*?<div class="post-list">([\s\S]*?)<\/div>\s*<div class="home-h">/;
+        const trendingMatch = html.match(trendingRegex);
+        if (trendingMatch) {
+            recommendations.trending = extractPosts(trendingMatch[1]);
+        }
+
+        // 人気（ランキング）を抽出
+        const popularRegex = /<h3>ランキング<\/h3>[\s\S]*?<div class="post-list">([\s\S]*?)<\/div>\s*<div class="home-h">/;
+        const popularMatch = html.match(popularRegex);
+        if (popularMatch) {
+            recommendations.popular = extractPosts(popularMatch[1]);
+        }
+
+        // コメント指数を抽出
+        const commentedRegex = /<h3>話題性<\/h3>[\s\S]*?<div class="post-list">([\s\S]*?)<\/div>\s*<div class="home-h">/;
+        const commentedMatch = html.match(commentedRegex);
+        if (commentedMatch) {
+            recommendations.commented = extractPosts(commentedMatch[1]);
+        }
+
+        // 高評価を抽出
+        const ratedRegex = /<h3>いいね！<\/h3>[\s\S]*?<div class="post-list">([\s\S]*?)(?:<\/div>)?$/;
+        const ratedMatch = html.match(ratedRegex);
+        if (ratedMatch) {
+            recommendations.rated = extractPosts(ratedMatch[1]);
+        }
+
+        // 画像をBase64に変換
+        const processRecommendations = async (items) => {
+            return await Promise.all(
+                items.slice(0, 8).map(async (item) => ({
+                    ...item,
+                    image: await fetchAsBase64(item.image)
+                }))
+            );
+        };
+
+        recommendations.trending = await processRecommendations(recommendations.trending);
+        recommendations.popular = await processRecommendations(recommendations.popular);
+        recommendations.commented = await processRecommendations(recommendations.commented);
+        recommendations.rated = await processRecommendations(recommendations.rated);
+
+        return c.json(recommendations);
+    } catch (error) {
+        console.error("Recommendations API Error:", error.message);
+        return c.json({ error: "Failed to fetch recommendations" }, 500);
+    }
+});
+
+// セクション別おすすめ取得（個別エンドポイント）
+app.get('/api/recommendations/:section', async (c) => {
+    const section = c.req.param('section'); // trending, popular, commented, rated
+    const limit = parseInt(c.req.query('limit') || '20', 10);
+
+    if (!['trending', 'popular', 'commented', 'rated'].includes(section)) {
+        return c.text("Invalid section", 400);
+    }
+
+    try {
+        const targetUrl = 'https://momon-ga.com/';
+        const response = await fetch(targetUrl, {
+            headers: { 'User-Agent': UA }
+        });
+        const html = await response.text();
+
+        const sectionMap = {
+            trending: { title: 'トレンド', header: 'h3' },
+            popular: { title: 'ランキング', header: 'h3' },
+            commented: { title: '話題性', header: 'h3' },
+            rated: { title: 'いいね！', header: 'h3' }
+        };
+
+        const sectionInfo = sectionMap[section];
+        const regex = new RegExp(`<${sectionInfo.header}>${sectionInfo.title}<\/${sectionInfo.header}>([\\s\\S]*?)<div class="home-h">`, 'i');
+        const sectionMatch = html.match(regex);
+
+        if (!sectionMatch) {
+            return c.json({ result: [] });
+        }
+
+        const sectionHtml = sectionMatch[1];
+        const posts = [];
+        const postRegex = /<a href="https:\/\/momon-ga\.com\/(?:fanzine|magazine)\/(mo[0-9-]+)\/">[\s\S]*?<img[^>]*src="([^"]+)"[\s\S]*?alt="([^"]+)"[\s\S]*?<div class="post-list-wpulike">([^<]+)<\/div>/g;
+        let match;
+        while ((match = postRegex.exec(sectionHtml)) !== null && posts.length < limit) {
+            posts.push({
+                id: match[1],
+                image: match[2],
+                title: match[3],
+                engagement: match[4]
+            });
+        }
+
+        // Base64変換
+        const results = await Promise.all(
+            posts.map(async (post) => ({
+                ...post,
+                image: await fetchAsBase64(post.image)
+            }))
+        );
+
+        return c.json({ section, result: results });
+    } catch (error) {
+        console.error("Section Recommendations API Error:", error.message);
+        return c.json({ error: "Failed to fetch recommendations" }, 500);
     }
 });
 
