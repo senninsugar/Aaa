@@ -17,6 +17,7 @@
             --text-sub: #c9d1d9;
             --border: rgba(255, 255, 255, 0.1);
             --danger: #f85149;
+            --success: #2ea44f;
         }
 
         * { box-sizing: border-box; }
@@ -63,6 +64,32 @@
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.2);
             color: var(--text);
+        }
+
+        .download-btn {
+            color: var(--text);
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #38bdf8, #0284c7);
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .download-btn:hover {
+            opacity: 0.95;
+            transform: translateY(-1px);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .container {
@@ -409,6 +436,8 @@
             overflow: hidden;
         }
     </style>
+    <!-- ZIPアーカイブ作成用ライブラリ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -417,6 +446,10 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
             ホームに戻る
         </a>
+        <button id="downloadBtn" class="download-btn" onclick="downloadAllImages()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span id="downloadBtnText">ダウンロード</span>
+        </button>
     </div>
 
     <div class="container">
@@ -470,6 +503,7 @@
     <script>
         let currentWorkId = null;
         let localComments = [];
+        let currentWorkData = null;
 
         async function loadViewer() {
             const params = new URLSearchParams(window.location.search);
@@ -491,6 +525,7 @@
             try {
                 const res = await fetch(`/api/proxy-details?id=${encodeURIComponent(currentWorkId)}`);
                 const data = await res.json();
+                currentWorkData = data;
 
                 // メタ情報の挿入
                 document.getElementById('title').textContent = data.title;
@@ -535,6 +570,78 @@
 
             } catch (e) {
                 loading.innerHTML = '<div style="color: var(--danger); font-size: 0.95rem;">作品情報の読み込みに失敗しました。</div>';
+            }
+        }
+
+        // 画像のダウンロード処理
+        async function downloadAllImages() {
+            if (!currentWorkData || !currentWorkData.images || currentWorkData.images.length === 0) {
+                alert('ダウンロード可能な画像がありません。');
+                return;
+            }
+
+            const btn = document.getElementById('downloadBtn');
+            const btnText = document.getElementById('downloadBtnText');
+            btn.disabled = true;
+
+            const images = currentWorkData.images;
+            const title = currentWorkData.title || 'work';
+            const sanitizedTitle = title.replace(/[\\/:*?"<>|]/g, '_');
+
+            try {
+                if (typeof JSZip !== 'undefined') {
+                    const zip = new JSZip();
+                    const folder = zip.folder(sanitizedTitle);
+
+                    for (let i = 0; i < images.length; i++) {
+                        btnText.textContent = `取得中... (${i + 1}/${images.length})`;
+                        const imgUrl = images[i];
+                        const ext = imgUrl.split('.').pop().split('?')[0].split('#')[0] || 'jpg';
+                        const fileName = `${String(i + 1).padStart(3, '0')}.${ext}`;
+
+                        try {
+                            const response = await fetch(imgUrl);
+                            const blob = await response.blob();
+                            folder.file(fileName, blob);
+                        } catch (err) {
+                            console.error(`画像 ${i + 1} の取得に失敗しました:`, err);
+                        }
+                    }
+
+                    btnText.textContent = 'ZIP圧縮中...';
+                    const content = await zip.generateAsync({ type: 'blob' });
+                    
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(content);
+                    a.download = `${sanitizedTitle}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(a.href);
+                } else {
+                    // JSZipが利用できない場合のフォールバック（1枚ずつ保存）
+                    for (let i = 0; i < images.length; i++) {
+                        btnText.textContent = `DL中... (${i + 1}/${images.length})`;
+                        const imgUrl = images[i];
+                        const ext = imgUrl.split('.').pop().split('?')[0].split('#')[0] || 'jpg';
+                        const response = await fetch(imgUrl);
+                        const blob = await response.blob();
+                        const a = document.createElement('a');
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `${sanitizedTitle}_${String(i + 1).padStart(3, '0')}.${ext}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(a.href);
+                        await new Promise(r => setTimeout(r, 200));
+                    }
+                }
+            } catch (err) {
+                alert('ダウンロード処理中にエラーが発生しました。');
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'ダウンロード';
             }
         }
 
