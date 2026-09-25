@@ -226,8 +226,6 @@
             width: 100%;
             height: auto;
             display: block;
-            content-visibility: auto;
-            contain-intrinsic-size: 800px;
         }
 
         /* セクション共通見出し */
@@ -594,25 +592,21 @@
                 if (typeof JSZip !== 'undefined') {
                     const zip = new JSZip();
                     const folder = zip.folder(sanitizedTitle);
-                    let completed = 0;
 
-                    btnText.textContent = `取得中... (0/${images.length})`;
+                    for (let i = 0; i < images.length; i++) {
+                        btnText.textContent = `取得中... (${i + 1}/${images.length})`;
+                        const imgUrl = images[i];
+                        const ext = imgUrl.split('.').pop().split('?')[0].split('#')[0] || 'jpg';
+                        const fileName = `${String(i + 1).padStart(3, '0')}.${ext}`;
 
-                    // 画像を一括で高速並列ダウンロード
-                    await Promise.all(images.map(async (imgUrl, i) => {
                         try {
                             const response = await fetch(imgUrl);
                             const blob = await response.blob();
-                            const ext = imgUrl.split('.').pop().split('?')[0].split('#')[0] || 'jpg';
-                            const fileName = `${String(i + 1).padStart(3, '0')}.${ext}`;
                             folder.file(fileName, blob);
                         } catch (err) {
                             console.error(`画像 ${i + 1} の取得に失敗しました:`, err);
-                        } finally {
-                            completed++;
-                            btnText.textContent = `取得中... (${completed}/${images.length})`;
                         }
-                    }));
+                    }
 
                     btnText.textContent = 'ZIP圧縮中...';
                     const content = await zip.generateAsync({ type: 'blob' });
